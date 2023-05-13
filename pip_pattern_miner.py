@@ -259,8 +259,8 @@ if __name__ == '__main__':
     pip_miner = PIPPatternMiner(n_pips=5, lookback=24, hold_period=6)
     pip_miner.train(arr, n_reps=-1)
 
-    '''
-    # Monte Carlo test, takes about an hour..
+
+# Monte Carlo test, takes about an hour..
     pip_miner.train(arr, n_reps=100)
     
     plt.style.use('dark_background')
@@ -271,12 +271,4 @@ if __name__ == '__main__':
     ax.set_xlabel("Martin Ratio")
     ax.set_title("Permutation's Martin Ratio BTC-USDT 1H 2018-2020")
     ax.axvline(actual_martin, color='red')
-    '''
-
-
-
-
-
-
-    
 

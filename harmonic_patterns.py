@@ -2,11 +2,11 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import mplfinance as mpf
-import scipy
 from directional_change import directional_change, get_extremes
 from dataclasses import dataclass
 from typing import Union
 from math import log
+import yfinance as yf
 
 @dataclass
 class XABCD:
@@ -19,13 +19,13 @@ class XABCD:
 # Define Patterns
 GARTLEY = XABCD(0.618, [0.382, 0.886], [1.13, 1.618], 0.786, "Gartley")
 BAT = XABCD([0.382, 0.50], [0.382, 0.886], [1.618, 2.618], 0.886, "Bat")
-#ALT_BAT = XABCD(0.382, [0.382, 0.886], [2.0, 3.618], 1.13, "Alt Bat")
+ALT_BAT = XABCD(0.382, [0.382, 0.886], [2.0, 3.618], 1.13, "Alt Bat")
 BUTTERFLY = XABCD(0.786, [0.382, 0.886], [1.618, 2.24], [1.27, 1.41], "Butterfly")
 CRAB = XABCD([0.382, 0.618], [0.382, 0.886], [2.618, 3.618], 1.618, "Crab")
 DEEP_CRAB = XABCD(0.886, [0.382, 0.886], [2.0, 3.618], 1.618, "Deep Crab")
 CYPHER = XABCD([0.382, 0.618], [1.13, 1.41], [1.27, 2.00], 0.786, "Cypher")
 SHARK = XABCD(None, [1.13, 1.618], [1.618, 2.24], [0.886, 1.13], "Shark")
-ALL_PATTERNS = [GARTLEY, BAT, BUTTERFLY, CRAB, DEEP_CRAB, CYPHER, SHARK]
+ALL_PATTERNS = [GARTLEY, BAT,ALT_BAT, BUTTERFLY, CRAB, DEEP_CRAB, CYPHER, SHARK]
 
 @dataclass
 class XABCDFound:
@@ -118,7 +118,6 @@ def get_error(actual_ratio: float, pattern_ratio: Union[float, list, None]):
     else:
         raise TypeError("Invalid pattern ratio type")
 
-
 def find_xabcd(ohlc: pd.DataFrame, extremes: pd.DataFrame, err_thresh: float = 0.2):
     
     extremes['seg_height'] = (extremes['ext_p'] - extremes['ext_p'].shift(1)).abs()
@@ -143,7 +142,6 @@ def find_xabcd(ohlc: pd.DataFrame, extremes: pd.DataFrame, err_thresh: float = 0
         if extremes.index[extreme_i + 1] == i:
             entry_taken = 0
             extreme_i += 1
-        
         if entry_taken != 0:
             if entry_taken == 1:
                 output[pattern_used]['bull_signal'][i] = 1
@@ -219,11 +217,11 @@ def find_xabcd(ohlc: pd.DataFrame, extremes: pd.DataFrame, err_thresh: float = 0
 
     return output
 
-
 if __name__ == '__main__':
-    data = pd.read_csv('BTCUSDT3600.csv')
-    data['date'] = data['date'].astype('datetime64[s]')
-    data = data.set_index('date')
+    data = yf.download(tickers='ETH-USD',interval='1h',period='"1y')
+    data.columns=data.columns.str.lower()
+    print(data.columns)
+    
     #data = data[data.index < '2019-01-01']
    
     # This takes a while to run fyi
@@ -249,7 +247,7 @@ if __name__ == '__main__':
     print("Combined PF", combined_pf)
     
 
-    '''
+
     # Test single set of parameters
     extremes = get_extremes(data, 0.02)
     output =  find_xabcd(data, extremes, 0.2)
@@ -262,9 +260,7 @@ if __name__ == '__main__':
     data['signal_return'] = data['r'] * sig # Returns of all patterns combined
     plt.style.use('dark_background')
     data['signal_return'].cumsum().plot()
-    '''
-    
-    '''
+  
     # Test several sigma vvalues
     data['r'] = np.log(data['close']).diff().shift(-1)
     plt.style.use('dark_background')
@@ -275,16 +271,14 @@ if __name__ == '__main__':
         for pat in ALL_PATTERNS:
             sig += output[pat.name]['bear_signal'] + output[pat.name]['bull_signal']
 
-    
+
         data['signal_return'] = data['r'] * sig # Returns of all patterns combined
         data['signal_return'].cumsum().plot(label=str(sigma))
         pf = data[data['signal_return'] > 0]['signal_return'].sum() / data[data['signal_return'] < 0]['signal_return'].abs().sum()
         print(sigma, "Profit Factor: ", pf)
     plt.legend(prop={'size': 16})
     plt.show()
-    '''
-    
-    '''
+
     # Render error graph
     all_pfs = []
     all_thresholds = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.65, 0.7, 0.75]
@@ -314,10 +308,9 @@ if __name__ == '__main__':
     err_thresh_pfs.plot()
     plt.axhline(1.0, color='white')
     plt.show()
-    '''
+
     
 
-    '''
     # Find best err pattern
     best_pat = None
     best_err = 1000
@@ -325,9 +318,7 @@ if __name__ == '__main__':
         if pat.error < best_err:
             best_err = pat.error
             best_pat = pat
-    '''
-
-    '''
+  
     #Bar Charts by pattern PF and count
     sigmas = []
     patterns = []
@@ -375,6 +366,4 @@ if __name__ == '__main__':
     )
     plt.legend(prop={'size': 16}, title='Sigma Values')
     plt.show()
-    '''
-    
 
